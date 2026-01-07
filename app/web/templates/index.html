@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人科研助手</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .status-bar {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #4caf50;
+        }
+        
+        .status-dot.inactive {
+            background: #f44336;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        
+        .tab {
+            padding: 12px 24px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 1em;
+            color: #666;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+        }
+        
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            font-weight: bold;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        .input-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            resize: vertical;
+            font-family: inherit;
+        }
+        
+        .input-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .button:active {
+            transform: translateY(0);
+        }
+        
+        .button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .result-box {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+            min-height: 100px;
+            white-space: pre-wrap;
+            line-height: 1.6;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .documents-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .documents-list li {
+            padding: 10px;
+            background: #f5f5f5;
+            margin-bottom: 10px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔬 个人科研助手</h1>
+            <p>基于AI的本地科研文档分析系统</p>
+        </div>
+        
+        <div class="content">
+            <div class="status-bar">
+                <div class="status-item">
+                    <span class="status-dot" id="statusDot"></span>
+                    <span id="statusText">检查状态...</span>
+                </div>
+                <div id="documentCount">文档数: 0</div>
+            </div>
+            
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('qa')">文档问答</button>
+                <button class="tab" onclick="switchTab('similarity')">相似性分析</button>
+                <button class="tab" onclick="switchTab('recommend')">研究推荐</button>
+                <button class="tab" onclick="switchTab('documents')">文档列表</button>
+            </div>
+            
+            <!-- 文档问答 -->
+            <div id="qa" class="tab-content active">
+                <div class="input-group">
+                    <label for="question">请输入您的问题：</label>
+                    <textarea id="question" rows="3" placeholder="例如：这篇文档的主要研究方法是什么？"></textarea>
+                </div>
+                <button class="button" onclick="askQuestion()">提问</button>
+                <div id="qaResult" class="result-box" style="display: none;"></div>
+            </div>
+            
+            <!-- 相似性分析 -->
+            <div id="similarity" class="tab-content">
+                <p style="margin-bottom: 20px;">分析多个文档在研究问题、方法和思路上的相似性</p>
+                <button class="button" onclick="analyzeSimilarity()">开始分析</button>
+                <div id="similarityResult" class="result-box" style="display: none;"></div>
+            </div>
+            
+            <!-- 研究推荐 -->
+            <div id="recommend" class="tab-content">
+                <p style="margin-bottom: 20px;">基于现有文档推荐研究问题和方法</p>
+                <button class="button" onclick="recommendResearch()">获取推荐</button>
+                <div id="recommendResult" class="result-box" style="display: none;"></div>
+            </div>
+            
+            <!-- 文档列表 -->
+            <div id="documents" class="tab-content">
+                <h3 style="margin-bottom: 15px;">已加载的文档：</h3>
+                <ul class="documents-list" id="documentsList"></ul>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const API_BASE = '';
+        
+        // 检查状态
+        async function checkStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/api/status`);
+                const data = await response.json();
+                
+                const statusDot = document.getElementById('statusDot');
+                const statusText = document.getElementById('statusText');
+                const documentCount = document.getElementById('documentCount');
+                
+                if (data.indexed) {
+                    statusDot.classList.remove('inactive');
+                    statusText.textContent = '系统已就绪';
+                } else {
+                    statusDot.classList.add('inactive');
+                    statusText.textContent = '系统未初始化';
+                }
+                
+                documentCount.textContent = `文档数: ${data.document_count}`;
+                
+                if (data.indexed) {
+                    loadDocuments();
+                }
+            } catch (error) {
+                console.error('状态检查失败:', error);
+            }
+        }
+        
+        // 加载文档列表
+        async function loadDocuments() {
+            try {
+                const response = await fetch(`${API_BASE}/api/documents`);
+                const data = await response.json();
+                
+                const list = document.getElementById('documentsList');
+                list.innerHTML = '';
+                
+                if (data.documents.length === 0) {
+                    list.innerHTML = '<li>暂无文档</li>';
+                } else {
+                    data.documents.forEach(doc => {
+                        const li = document.createElement('li');
+                        li.textContent = doc;
+                        list.appendChild(li);
+                    });
+                }
+            } catch (error) {
+                console.error('加载文档列表失败:', error);
+            }
+        }
+        
+        // 切换标签页
+        function switchTab(tabName) {
+            // 隐藏所有标签内容
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // 移除所有标签的active类
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // 显示选中的标签内容
+            document.getElementById(tabName).classList.add('active');
+            
+            // 激活选中的标签
+            event.target.classList.add('active');
+            
+            // 如果是文档列表标签，加载文档
+            if (tabName === 'documents') {
+                loadDocuments();
+            }
+        }
+        
+        // 提问
+        async function askQuestion() {
+            const question = document.getElementById('question').value.trim();
+            if (!question) {
+                alert('请输入问题');
+                return;
+            }
+            
+            const resultDiv = document.getElementById('qaResult');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<div class="loading"><div class="spinner"></div>正在思考...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/ask`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ question })
+                });
+                
+                const data = await response.json();
+                resultDiv.textContent = data.answer || '未获取到回答';
+            } catch (error) {
+                resultDiv.textContent = '请求失败: ' + error.message;
+            }
+        }
+        
+        // 相似性分析
+        async function analyzeSimilarity() {
+            const resultDiv = document.getElementById('similarityResult');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<div class="loading"><div class="spinner"></div>正在分析...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/analyze_similarity`, {
+                    method: 'POST'
+                });
+                
+                const data = await response.json();
+                resultDiv.textContent = data.result || '分析失败';
+            } catch (error) {
+                resultDiv.textContent = '请求失败: ' + error.message;
+            }
+        }
+        
+        // 研究推荐
+        async function recommendResearch() {
+            const resultDiv = document.getElementById('recommendResult');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<div class="loading"><div class="spinner"></div>正在生成推荐...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/recommend`, {
+                    method: 'POST'
+                });
+                
+                const data = await response.json();
+                resultDiv.textContent = data.result || '推荐失败';
+            } catch (error) {
+                resultDiv.textContent = '请求失败: ' + error.message;
+            }
+        }
+        
+        // 页面加载时检查状态
+        checkStatus();
+        setInterval(checkStatus, 30000); // 每30秒检查一次状态
+    </script>
+</body>
+</html>
+
